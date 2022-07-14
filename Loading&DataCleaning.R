@@ -14,6 +14,11 @@ library(ape)
 library(phytools)
 
 
+save.image("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace1.Rdata")  # 
+
+load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace1.Rdata")  # 
+
+
 ##### Reading in data #####
 
 ##### T-BAS data, 99% similarity ####
@@ -68,6 +73,7 @@ row.names(dat.comm)<-dat3$PlantIndividualYear
 
 
 ##### Phylogenetic tree #####
+#note - the uncleaned tree in this directory contains the genus species names attached to the OTU numbers
 tree<-read.newick("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/FarrerTBAScleaned3/Farrertreecleaned.nwk")
 
 plot(tree)
@@ -78,11 +84,23 @@ PD<-pd(dat.comm,tree)
 
 dat4<-data.frame(dat3[,1:6],PD,dat3[,7:66])
 
+###### MPD by plantindividual ######
+phydist <- cophenetic(tree)
+ses.mpd.result <- ses.mpd(dat.comm, phydist, null.model="taxa.labels",abundance.weighted=FALSE, runs=999) #takes 5 min with 999
+ses.mpd.result
+ses.mpd.result$PlantIndividualYear<-rownames(ses.mpd.result)
+
+dat5<-dat4%>%
+  full_join(ses.mpd.result)
+
+dat6<-data.frame(dat5[,1:8],dat5[,69:76],dat5[,9:68])
+head(dat6)
+
 
 ##### phyloseq object ####
-otus<-dat4[,9:68]
+otus<-dat6[,17:76]#dat4[,9:68]
 otus2<-t(otus)
-sampleotus<-dat4[,c(1:8)]
+sampleotus<-dat6[,c(1:16)]
 taxonomyotus<-as.matrix(data.frame(Kingdom=row.names(otus2),Phylum=row.names(otus2),Class=row.names(otus2),Order=row.names(otus2),Class=row.names(otus2),Family=row.names(otus2),Genus=row.names(otus2),Species=row.names(otus2)))
 rownames(taxonomyotus)<-row.names(otus2)
 
@@ -95,6 +113,6 @@ unifracp<-unifrac(otus,tree)
 
 #### Summary of files #####
 datp #phyloseq object
-head(dat4) #big data frame, wide data format, dat3 plus PD data
+head(dat6) #big data frame, wide data format, dat3 plus PD and MPD data
 dat2 #long dataformat 
 
