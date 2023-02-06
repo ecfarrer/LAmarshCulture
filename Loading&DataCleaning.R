@@ -23,7 +23,7 @@ load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/Figu
 
 ##### T-BAS data, 99% similarity ####
 
-#OTUold is the otu name that was input for the isolate name in T-BAS, every isolate has a unique OTUold. Then numbers of OTUold are from Nelle's original T-BAS run and then we added A, B C, etc to them to make them unique.
+#OTUold is the otu name that was input for the isolate name in T-BAS, every isolate has a unique OTUold. The numbers of OTUold are from Nelle's original T-BAS run and then we added A, B C, etc to them to make them unique.
 #Query.sequence is also unique to each isolate. it is the OTUold plus the species name that Nelle's original T-BAS run came up with
 OTUreport<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/FarrerTBAScleaned3/tbas21_archiveCERVNAZT_/assignments_report_addvoucherCERVNAZT.csv",stringsAsFactors = T)
 cbind(OTUreport$otu,OTUreport$Query.sequence)
@@ -79,28 +79,52 @@ tree<-read.newick("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/C
 plot(tree)
 
 
+
+
+
 ##### Faith's Phylogenetic distance #####
 PD<-pd(dat.comm,tree)
 
 dat4<-data.frame(dat3[,1:6],PD,dat3[,7:66])
 
-###### MPD by plantindividual ######
+
+
+
+
+##### MPD by plantindividual #####
 phydist <- cophenetic(tree)
-ses.mpd.result <- ses.mpd(dat.comm, phydist, null.model="taxa.labels",abundance.weighted=FALSE, runs=999) #takes 5 min with 999
-ses.mpd.result
-ses.mpd.result$PlantIndividualYear<-rownames(ses.mpd.result)
+ses.mpd.result.notweighted <- ses.mpd(dat.comm, phydist, null.model="taxa.labels",abundance.weighted=FALSE, runs=999) #takes 5 min with 999
+ses.mpd.result.notweighted
+ses.mpd.result.notweighted$PlantIndividualYear<-rownames(ses.mpd.result.notweighted)
+ses.mpd.result.notweighted1<-ses.mpd.result.notweighted%>%
+  select(PlantIndividualYear,mpd.obs.z)%>%
+  rename(mpd.obs.z.notweighted=mpd.obs.z)
+
+ses.mpd.result.weighted <- ses.mpd(dat.comm, phydist, null.model="taxa.labels",abundance.weighted=TRUE, runs=999) #takes 5 min with 999
+ses.mpd.result.weighted
+ses.mpd.result.weighted$PlantIndividualYear<-rownames(ses.mpd.result.weighted)
+ses.mpd.result.weighted1<-ses.mpd.result.weighted%>%
+  select(PlantIndividualYear,mpd.obs.z)%>%
+  rename(mpd.obs.z.weighted=mpd.obs.z)
 
 dat5<-dat4%>%
-  full_join(ses.mpd.result)
-
-dat6<-data.frame(dat5[,1:8],dat5[,69:76],dat5[,9:68])
+  full_join(ses.mpd.result.notweighted1)%>%
+  full_join(ses.mpd.result.weighted1)
+  
+dat6<-data.frame(dat5[,1:8],dat5[,69:70],dat5[,9:68])
 head(dat6)
 
 
+
+
+
+
+
+
 ##### phyloseq object ####
-otus<-dat6[,17:76]#dat4[,9:68]
+otus<-dat6[,11:70]
 otus2<-t(otus)
-sampleotus<-dat6[,c(1:16)]
+sampleotus<-dat6[,c(1:10)]
 taxonomyotus<-as.matrix(data.frame(Kingdom=row.names(otus2),Phylum=row.names(otus2),Class=row.names(otus2),Order=row.names(otus2),Class=row.names(otus2),Family=row.names(otus2),Genus=row.names(otus2),Species=row.names(otus2)))
 rownames(taxonomyotus)<-row.names(otus2)
 
@@ -116,3 +140,11 @@ datp #phyloseq object
 head(dat6) #big data frame, wide data format, dat3 plus PD and MPD data
 dat2 #long dataformat 
 
+
+
+##### git hub token stuff #####
+install.packages("gitcreds")
+library(gitcreds)
+gitcreds_set()
+ #first when it asks to enter password or token I put my computer password
+ #then do gitcreds_set() again and select 2, then paste my token
