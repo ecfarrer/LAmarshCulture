@@ -14,9 +14,9 @@ library(ape)
 library(phytools)
 
 
-save.image("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace1.Rdata")  # 
+save.image("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace2.Rdata")  # 
 
-load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace1.Rdata")  # 
+load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/workspace2.Rdata")  # 
 
 
 ##### Reading in data #####
@@ -25,6 +25,10 @@ load("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/Figu
 
 #OTUold is the otu name that was input for the isolate name in T-BAS, every isolate has a unique OTUold. The numbers of OTUold are from Nelle's original T-BAS run and then we added A, B C, etc to them to make them unique.
 #Query.sequence is also unique to each isolate. it is the OTUold plus the species name that Nelle's original T-BAS run came up with
+#OTU is the new analysis OTU - what I want
+#I think I want "Genusspecies" as for the taxonomy. "taxon assignment" is similar to genusspecies but sometimes has multiple taxa listed
+#anything with CERVNAZT is from the input data (so from Nelle's data), not what I want
+
 OTUreport<-read.csv("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/FarrerTBAScleaned3/tbas21_archiveCERVNAZT_/assignments_report_addvoucherCERVNAZT.csv",stringsAsFactors = T)
 cbind(OTUreport$otu,OTUreport$Query.sequence)
 OTUreport2<-OTUreport%>%
@@ -109,13 +113,15 @@ ses.mpd.result.weighted1<-ses.mpd.result.weighted%>%
 
 dat5<-dat4%>%
   full_join(ses.mpd.result.notweighted1)%>%
-  full_join(ses.mpd.result.weighted1)
+  full_join(ses.mpd.result.weighted1)%>%
+  mutate(HostPlant=recode(HostPlant,"Spartina alterniflora"= "S. alterniflora","Spartina patens"="S. patens","Phragmites australis"="P. australis","Juncus roemerianus"="J. roemerianus","Sagittaria lancifolia"="S. lancifolia"))
+  
   
 dat6<-data.frame(dat5[,1:8],dat5[,69:70],dat5[,9:68])
 head(dat6)
 
 
-
+dplyr::mutate(Species=dplyr::recode(Species,"Phragmites australis (L)"="Phragmites australis"))
 
 
 
@@ -142,9 +148,42 @@ dat2 #long dataformat
 
 
 
+
+###### testing blasting to unite ######
+#unite.ref <- "/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAMarsh/Survey/Stats/Gradient/QIIME2/sh_general_release_dynamic_s_04.02.2020.fasta" #
+
+unite.ref <- "/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAMarsh/Culturing/FiguresStats/LAmarshCulture/sh_general_release_dynamic_s_29.11.2022.fasta"
+
+#to look at all or random sequences, not just the 60 otu rep set. can get seuqences in report_placed_qrydata.csv
+test<-read.csv("test.csv",header=T)
+taxatest<-assignTaxonomy(test, unite.ref, multithread = TRUE, minBoot=50, tryRC = TRUE,outputBootstraps=T) #was minBoot=70
+taxatestonly<-taxatest$tax;rownames(taxatestonly)<-1:dim(taxatest$tax)[1]
+taxatestboot<-taxatest$boot;rownames(taxatestboot)<-1:dim(taxatest$tax)[1]
+taxatestonly
+taxatestboot
+
+#I got this data from assignments_report_nodupsCERVNAZD.csv
+my60otus<-read.csv("otus60.csv",header=T);rownames(my60otus)<-my60otus$abundance
+
+taxa<-assignTaxonomy(my60otus, unite.ref, multithread = TRUE, minBoot=70, tryRC = TRUE,outputBootstraps=T) #was minBoot=70
+taxaonly<-data.frame(taxa$tax);rownames(taxaonly)<-1:dim(taxa$tax)[1]
+taxaboot<-data.frame(taxa$boot);rownames(taxaboot)<-1:dim(taxa$tax)[1]
+taxaonly
+taxaboot
+rownames(taxaonly)<-rownames(my60otus)
+genusspecies<-data.frame(otu=rownames(my60otus),genusspecies=
+paste(gsub("^.*?__","",taxaonly[,"Genus"]),gsub("^.*?__","",taxaonly[,"Species"])),genusboot=taxaboot[,"Genus"],speciesboot=taxaboot[,"Species"])
+
+sort(unique(genusspecies$genusspecies))
+sort(unique(taxaonly$Phylum))
+
+taxaonly%>%group_by(Phylum)%>%tally()
+
+
 ##### git hub token stuff #####
 install.packages("gitcreds")
 library(gitcreds)
 gitcreds_set()
  #first when it asks to enter password or token I put my computer password
  #then do gitcreds_set() again and select 2, then paste my token
+#Note: use usename (email) and token, when RStudio wants the github password
