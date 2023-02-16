@@ -6,6 +6,10 @@ library(plotrix)
 library(phyloseq)
 library(QsRutils)
 
+#devtools::install_github("brendanf/FUNGuildR")
+
+library(FUNGuildR)
+
 #install.packages("remotes")
 #remotes::install_github("jfq3/QsRutils") #distance matrix subsetting function
 
@@ -171,13 +175,59 @@ taxaboot<-data.frame(taxa$boot);rownames(taxaboot)<-1:dim(taxa$tax)[1]
 taxaonly
 taxaboot
 rownames(taxaonly)<-rownames(my60otus)
-genusspecies<-data.frame(otu=rownames(my60otus),genusspecies=
-paste(gsub("^.*?__","",taxaonly[,"Genus"]),gsub("^.*?__","",taxaonly[,"Species"])),genusboot=taxaboot[,"Genus"],speciesboot=taxaboot[,"Species"])
+genusspecies<-data.frame(otu=rownames(my60otus),genusspecies=paste(gsub("^.*?__","",taxaonly[,"Genus"]),gsub("^.*?__","",taxaonly[,"Species"])),genusboot=taxaboot[,"Genus"],speciesboot=taxaboot[,"Species"])
 
 sort(unique(genusspecies$genusspecies))
 sort(unique(taxaonly$Phylum))
 
 taxaonly%>%group_by(Phylum)%>%tally()
+
+
+
+
+##### FunGuild #####
+
+#The weird thing about FUNGuildR is that for some taxa, like when I have Fusarium equiseti it matches to Nectriaceae rather than Fusarium in the database. When I used the FUNGUILD in the terminal, it worked better and matched to the lowest taxonomic level. 
+
+#using FUNGuildR
+genussp<-paste(gsub("^.*?__","",taxaonly$Genus),gsub("^.*?__","",taxaonly$Species))
+taxaonly$Taxonomy<-paste(gsub("^.*?__","",taxaonly$Kingdom),gsub("^.*?__","",taxaonly$Phylum),gsub("^.*?__","",taxaonly$Class),gsub("^.*?__","",taxaonly$Order),gsub("^.*?__","",taxaonly$Family),gsub("^.*?__","",taxaonly$Genus),genussp,sep=";")
+
+#Download the up-to-date database
+#fung <- get_funguild_db()
+
+#save it to my computer for reproducable data
+#saveRDS(fung, "funguild.rds")
+
+#load it back into workspace
+#fung <- loadRDS("funguild.rds")
+
+fung_guilds <- funguild_assign(taxaonly, db = fung)
+
+#temp3 <- funguild_query("Buergenerula*", "taxon", db = fung)
+
+
+#Doing it in terminal
+taxaonly2<-taxaonly
+taxaonly2$taxonomy<-paste(taxaonly2$Kingdom,taxaonly2$Phylum,taxaonly2$Class,taxaonly2$Order,taxaonly2$Family,taxaonly2$Genus,taxaonly2$Species,sep=";")
+
+write.csv(taxaonly2,"/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/FUNGuild/taxaonly.csv")
+
+#open the file, make the first column name OTU ID, save as a .txt file (add the .txt extension). then run below:
+
+python FUNGuild.py taxa -otu taxaonly.txt -format tsv -column taxonomy -classifier unite
+python FUNGuild.py guild -taxa taxaonly.taxa.txt         
+
+guilds<-read.delim("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/FiguresStats/LAmarshCulture/FUNGuild/taxaonly.taxa.guilds.txt")
+View(guilds)
+
+guilds%>%filter(trophicMode==("Pathotroph"))
+guilds%>%filter(trophicMode==("Symbiotroph"))
+
+View(funguild_query("*Saprotroph*", "trophicMode", db = guilds))
+
+
+
 
 
 ##### git hub token stuff #####
