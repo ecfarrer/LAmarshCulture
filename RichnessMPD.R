@@ -3,6 +3,7 @@
 #should change to referencing dat6 (it is the same data I just added the MPD data to the dat4 dataframe)
 
 options(contrasts=c("contr.helmert","contr.poly"))
+options(contrasts=c("contr.treatment","contr.poly"))
 options("contrasts")
 
 
@@ -212,15 +213,40 @@ ggplot(mpdmean,aes(x=Site,y=mean,color=HostPlant,group=HostPlant))+
   geom_errorbar(aes(ymax = mean+se, ymin=mean-se),width=.25,size=.5) +
   facet_wrap(~HostPlant)#,strip.position = "bottom")
 
+options(contrasts=c("contr.helmert","contr.poly"))
+options(contrasts=c("contr.treatment","contr.poly"))
 
-m1<-gls(mpd.obs.z.weighted~HostPlant+Site,data=dat6,na.action=na.omit)
-anova(m1,type="marginal")
-
-m2<-gls(mpd.obs.z.weighted~HostPlant*Site,data=phragspartina,na.action=na.omit)
-anova(m2,type="marginal")
+# m1<-gls(mpd.obs.z.weighted~HostPlant+Site,data=dat6,na.action=na.omit)
+# anova(m1,type="marginal")
+ 
+# m2<-gls(mpd.obs.z.weighted~HostPlant*Site,data=phragspartina,na.action=na.omit)
+# anova(m2,type="marginal")
 
 m1<-lme(mpd.obs.z.weighted~HostPlant+Site,random=~1|Year,data=dat6,na.action=na.omit)
+# m2<-lme(mpd.obs.z.weighted~HostPlant+Site,random=~1|Year,weights=varIdent(form=~1|Site),data=dat6,na.action=na.omit)
+# m3<-lme(mpd.obs.z.weighted~HostPlant+Site,random=~1|Year,weights=varIdent(form=~1|HostPlant),data=dat6,na.action=na.omit)
+# m4<-lme(mpd.obs.z.weighted~HostPlant+Site,random=~1|Year,weights=varIdent(form=~1|HostPlantSite),data=dat6,na.action=na.omit)
+# anova(m1,m2,m3,m4)
 anova(m1,type="marginal")
+hist(resid(m1))
+plot(fitted(m1),resid(m1))
+
+
+#remove the space in HostPlantSite and make it a factor
+#dat6$HostPlantSite<-gsub("\\s+", "", dat6$HostPlantSite)
+#dat6$HostPlantSite<-factor(dat6$HostPlantSite)
+
+m2<-lme(mpd.obs.z.weighted~HostPlantSite,random=~1|Year,data=dat6,na.action=na.omit)#,weights=varIdent(form=~1|HostPlantSite)
+m2<-gls(mpd.obs.z.weighted~HostPlantSite,data=dat6,na.action=na.omit)#,weights=varIdent(form=~1|HostPlantSite)
+
+#this does not work, it gives the wrong means
+#summary(glht(m2, linfct = mcp(HostPlantSite=c("Phragmitesaustralis_TurtleCove=0","Sagittarialancifolia_TurtleCove=0","Spartinapatens_TurtleCove=0","Phragmitesaustralis_CERF=0","Spartinaalterniflora_CERF=0","Spartinapatens_CERF=0","Juncusroemerianus_LUMCON=0","Phragmitesaustralis_LUMCON=0","Spartinaalterniflora_LUMCON=0","Spartinapatens_LUMCON=0"))))
+
+m2em<-as.data.frame(summary(emmeans(m2,~HostPlantSite)))
+m2.r<-ref_grid(m2)
+m2.s<-emmeans(m2.r,"HostPlantSite")
+test(m2.s,adjust="fdr")#dunnett (what glht uses) or fdr
+
 
 m2<-lme(mpd.obs.z.weighted~HostPlant*Site,random=~1|Year,data=phragspartina,na.action=na.omit)
 anova(m2,type="marginal")
