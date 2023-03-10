@@ -72,6 +72,8 @@ ggplot(richnessmean,aes(x=HostPlant,y=mean,color=HostPlant,group=HostPlant))+
 
 m1<-lme(SR~HostPlant+Site,random=~1|Year,data=dat6,na.action=na.omit)
 anova(m1,type="marginal")
+hist(resid(m1))
+boxplot(resid(m1)~dat6$HostPlantSite)
 
 m2<-lme(SR~HostPlant*Site,random=~1|Year,data=phragspartina,na.action=na.omit)
 anova(m2,type="marginal")
