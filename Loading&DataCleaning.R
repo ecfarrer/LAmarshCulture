@@ -5,10 +5,14 @@ library(picante)
 library(plotrix)
 library(phyloseq)
 library(QsRutils)
-
+library(cowplot)
+library(nlme)
+library(multcomp)
+library(emmeans)
+library(FUNGuildR)
 #devtools::install_github("brendanf/FUNGuildR")
 
-library(FUNGuildR)
+#library(FUNGuildR)
 
 #install.packages("remotes")
 #remotes::install_github("jfq3/QsRutils") #distance matrix subsetting function
@@ -148,6 +152,7 @@ unifracp<-unifrac(otus,tree)
 #### Summary of files #####
 datp #phyloseq object
 head(dat6) #big data frame, wide data format, dat3 plus PD and MPD data
+dat7 #dat6 plus funguild pathogens/symbiotrophs
 dat2 #long dataformat 
 
 
@@ -190,8 +195,8 @@ taxaonly%>%group_by(Phylum)%>%tally()
 #The weird thing about FUNGuildR is that for some taxa, like when I have Fusarium equiseti it matches to Nectriaceae rather than Fusarium in the database. When I used the FUNGUILD in the terminal, it worked better and matched to the lowest taxonomic level. 
 
 #using FUNGuildR
-genussp<-paste(gsub("^.*?__","",taxaonly$Genus),gsub("^.*?__","",taxaonly$Species))
-taxaonly$Taxonomy<-paste(gsub("^.*?__","",taxaonly$Kingdom),gsub("^.*?__","",taxaonly$Phylum),gsub("^.*?__","",taxaonly$Class),gsub("^.*?__","",taxaonly$Order),gsub("^.*?__","",taxaonly$Family),gsub("^.*?__","",taxaonly$Genus),genussp,sep=";")
+# genussp<-paste(gsub("^.*?__","",taxaonly$Genus),gsub("^.*?__","",taxaonly$Species))
+# taxaonly$Taxonomy<-paste(gsub("^.*?__","",taxaonly$Kingdom),gsub("^.*?__","",taxaonly$Phylum),gsub("^.*?__","",taxaonly$Class),gsub("^.*?__","",taxaonly$Order),gsub("^.*?__","",taxaonly$Family),gsub("^.*?__","",taxaonly$Genus),genussp,sep=";")
 
 #Download the up-to-date database
 #fung <- get_funguild_db()
@@ -202,12 +207,12 @@ taxaonly$Taxonomy<-paste(gsub("^.*?__","",taxaonly$Kingdom),gsub("^.*?__","",tax
 #load it back into workspace
 #fung <- loadRDS("funguild.rds")
 
-fung_guilds <- funguild_assign(taxaonly, db = fung)
+# fung_guilds <- funguild_assign(taxaonly, db = fung)
 
 #temp3 <- funguild_query("Buergenerula*", "taxon", db = fung)
 
 
-#Doing it in terminal
+#Doing it in terminal - use this
 taxaonly2<-taxaonly
 taxaonly2$taxonomy<-paste(taxaonly2$Kingdom,taxaonly2$Phylum,taxaonly2$Class,taxaonly2$Order,taxaonly2$Family,taxaonly2$Genus,taxaonly2$Species,sep=";")
 
@@ -226,7 +231,54 @@ guilds%>%filter(trophicMode==("Symbiotroph"))
 
 View(funguild_query("*Saprotroph*", "trophicMode", db = guilds))
 
+#merge with OTU table (of datp) with guilds from above
+otutomerge<-data.frame(otu_table(datp))
+otutomerge$OTU<-rownames(otutomerge)
+head(guilds)
+guilds2<-guilds%>%
+  full_join(otutomerge)
+head(guilds2)
+ind<-which(guilds2$guild=="Plant Pathogen")
+plantpathogen<-colSums(guilds2[ind,18:89])
+plantpathogentaxa<-colSums(guilds2[ind,18:89]>0)
 
+ind<-funguild_query("*Plant Pathogen*", "guild", db = guilds2)$OTU#trophicMode
+ind2<-which(guilds2$OTU%in%ind)
+plantpathogenbroad<-colSums(guilds2[ind2,18:89])
+plantpathogenbroadtaxa<-colSums(guilds2[ind2,18:89]>0)
+
+ind<-funguild_query("*Plant Pathogen*", "guild", db = guilds2)#trophicMode
+ind2<-ind[which(ind$confidenceRanking%in%c("Probable","Highly Probable")),"OTU"]
+ind3<-which(guilds2$OTU%in%ind2)
+plantpathogenbroadprobablehp<-colSums(guilds2[ind3,18:89])
+plantpathogenbroadprobablehptaxa<-colSums(guilds2[ind3,18:89]>0)
+
+ind<-funguild_query("*Symbiotroph*", "trophicMode", db = guilds2)$OTU
+ind2<-which(guilds2$OTU%in%ind)
+symbiotroph<-colSums(guilds2[ind2,18:89])
+symbiotrophtaxa<-colSums(guilds2[ind2,18:89]>0)
+
+ind<-funguild_query("*Symbiotroph*", "trophicMode", db = guilds2)
+ind2<-ind[which(ind$confidenceRanking%in%c("Probable","Highly Probable")),"OTU"]
+ind3<-which(guilds2$OTU%in%ind2)
+symbiotrophprobablehp<-colSums(guilds2[ind3,18:89])
+symbiotrophprobablehptaxa<-colSums(guilds2[ind3,18:89]>0)
+
+totalabundance<-colSums(guilds2[,18:89])
+
+temp<-data.frame(sample_data(datp))
+temp$rownames<-rownames(temp)
+temp<-temp%>%
+  dplyr::select(rownames,PlantIndividualYear)
+temp2<-data.frame(temp,plantpathogen,plantpathogenbroad,plantpathogenbroadprobablehp,symbiotroph,symbiotrophprobablehp,totalabundance,plantpathogentaxa,plantpathogenbroadtaxa,plantpathogenbroadprobablehptaxa,symbiotrophtaxa,symbiotrophprobablehptaxa)
+
+dat7<-dat6%>%
+  full_join(temp2)
+
+phragspartina<-dat6%>%
+  filter(HostPlant%in%c('Phragmites australis','Spartina patens'))
+phragspartina<-dat7%>%
+  filter(HostPlant%in%c('P. australis','S. patens'))
 
 
 

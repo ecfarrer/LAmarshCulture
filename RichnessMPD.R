@@ -142,8 +142,6 @@ m1<-gls(PD~HostPlant+Site,data=dat6,na.action=na.omit)
 #m1<-gls(mpd.obs.z.weighted~Site,data=dat6,na.action=na.omit)
 anova(m1,type="marginal")
 
-phragspartina<-dat6%>%
-  filter(HostPlant%in%c('Phragmites australis','Spartina patens'))
 m1<-gls(PD~HostPlant*Site,data=phragspartina,na.action=na.omit)
 anova(m1,type="marginal")
 
