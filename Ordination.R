@@ -98,6 +98,21 @@ plot1<-plot_ordination(datp3, mynmdsALLb, type="samples", color="HostPlant",shap
   #stat_ellipse(geom = "polygon", type="t", alpha=0, aes(x=CAP1,y=CAP2,color=Site),level=.95,inherit.aes = F)+
   stat_ellipse(geom = "polygon", type="t", alpha=0.2, aes(x=CAP1,y=CAP2,fill=HostPlant),level=.95,inherit.aes = F)
 
+#Plotting convex hulls rather than ellipses, USE THIS FOR MANUSCRIPT
+site_scores1 <- data.frame(cbind(sample_data(datp3),vegan::scores(mynmdsALLb)$sites,labels=rownames(vegan::scores(mynmdsALLb)$sites)))
+
+hull1 <- site_scores1 %>%
+  group_by(HostPlant) %>%
+  slice(chull(CAP1,CAP2))
+
+plot1<-ggplot(site_scores1)+
+  theme_classic()+#  theme(legend.position = "none")
+  xlab("CAP1 [5.1%]") +  # 
+  ylab("CAP2 [3.7%]") +  # 
+  scale_shape_manual(values=c(5,3,16))+ 
+  geom_point(aes(x=CAP1, y=CAP2,color=HostPlant,shape=Site),size = 2)+
+  geom_polygon(data=hull1,aes(x=CAP1,y=CAP2, fill=HostPlant,colour = HostPlant),alpha=.2)
+
 # p1=plot_ordination(datp3, mynmdsALLb, type="samples",shape="HostPlant",color="HostPlant",axes=c(1,2))
 # 
 # ggplot(p1$data, aes(x=CAP1,y=CAP2,color="HostPlant",shape="HostPlant")) +
@@ -137,6 +152,22 @@ plot_ordination(datp, mynmdsALLm, type="samples", color="HostPlant",axes=c(1,2))
   geom_point(size = 2)+
   stat_ellipse(geom = "polygon", type="t", alpha=0.2, aes(fill=HostPlant),level=.95)
 
+#Using convex hulls USE THIS FOR MS
+site_scores2 <- data.frame(cbind(sample_data(datp),vegan::scores(mynmdsALLm)$sites,labels=rownames(vegan::scores(mynmdsALLm)$sites)))
+
+hull2 <- site_scores2 %>%
+  group_by(HostPlant) %>%
+  slice(chull(CAP1,CAP2))
+
+plot2<-ggplot(site_scores2)+
+  theme_classic()+#  theme(legend.position = "none")
+  xlab("CAP1 [8.1%]") +  # 
+  ylab("CAP2 [2.1%]") +  # 
+  scale_shape_manual(values=c(5,3,16))+ 
+  geom_point(aes(x=CAP1, y=CAP2,color=HostPlant,shape=Site),size = 2)+
+  geom_polygon(data=hull2,aes(x=CAP1,y=CAP2, fill=HostPlant,colour = HostPlant),alpha=.2)
+
+
 
 #jaccard
 mynmdsALLj <- ordinate(datp, "CAP",distance(datp, method = "jaccard", binary = TRUE),formula=as.formula(~HostPlant+Site+Condition(Year)))
@@ -149,7 +180,7 @@ plot_ordination(datp, mynmdsALLj, type="samples", color="Site",axes=c(1,2))+
 
 # figure for comp and mdp
 #I could try flipping over the y axis
-pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/Manuscripts/ordinationcompmpd.pdf",,height = 3.5,width = 11)
+pdf("/Users/farrer/Dropbox/EmilyComputerBackup/Documents/LAmarsh/Culturing/Manuscripts/ordinationcompmpdhulls.pdf",height = 3.5,width = 11)
 plot_grid(plot1, plot2, nrow = 1, labels=c("A. Composition","B. MPD"),label_fontface = "plain",hjust=c(-.5,-1.),vjust=1)
 dev.off()
 
