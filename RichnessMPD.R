@@ -7,6 +7,37 @@ options(contrasts=c("contr.treatment","contr.poly"))
 options("contrasts")
 
 
+##### Calculating richness by plant species #####
+dat6junroe<-dat6%>%
+  filter(HostPlant=="J. roemerianus")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6junroe)>0)) # 16 taxa in junroe
+
+dat6phraus<-dat6%>%
+  filter(HostPlant=="P. australis")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6phraus)>0)) # 30 taxa in phrag
+
+dat6spapat<-dat6%>%
+  filter(HostPlant=="S. patens")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6spapat)>0)) # 18 taxa in patens
+
+dat6spaalt<-dat6%>%
+  filter(HostPlant=="S. alterniflora")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6spaalt)>0)) # 28 taxa in patens
+
+dat6saglan<-dat6%>%
+  filter(HostPlant=="S. lancifolia")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6saglan)>0)) # 9 taxa in patens
+
+#abundance
+rowSums(dat6[,11:70])
+
+
+
 ###### Richness #####
 richnessmean<-dat6%>%
   group_by(HostPlant,Site)%>%
@@ -75,9 +106,19 @@ anova(m1,type="marginal")
 hist(resid(m1))
 boxplot(resid(m1)~dat6$HostPlantSite)
 
+#with heterogeneous variances, not significant
+#m1a<-lme(SR~HostPlant+Site,random=~1|Year,weights=varIdent(form=~1|Site*HostPlant),data=dat6,na.action=na.omit)
+#anova(m1,m1a)
+#anova(m1,type="marginal")
+
+
 m2<-lme(SR~HostPlant*Site,random=~1|Year,data=phragspartina,na.action=na.omit)
 anova(m2,type="marginal")
 
+#with heterogeneous variances, not significant
+#m2a<-lme(SR~HostPlant*Site,random=~1|Year,weights=varIdent(form=~1|Site*HostPlant),data=phragspartina,na.action=na.omit)
+#anova(m2,m2a)
+#anova(m2,type="marginal")
 
 
 
@@ -250,6 +291,10 @@ test(m2.s,adjust="fdr")#dunnett (what glht uses) or fdr
 
 m2<-lme(mpd.obs.z.weighted~HostPlant*Site,random=~1|Year,data=phragspartina,na.action=na.omit)
 anova(m2,type="marginal")
+
+#tyring heterogeneou variances, not significant
+#m2a<-lme(mpd.obs.z.weighted~HostPlant*Site,random=~1|Year,weights=varIdent(form=~1|HostPlant*Site),data=phragspartina,na.action=na.omit)
+#anova(m2,m2a)
 
 # m2<-lme(mpd.obs.z.weighted~Site,random=~1|HostPlant,data=dat6,na.action=na.omit)
 # anova(m2)
