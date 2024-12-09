@@ -7,6 +7,58 @@ options(contrasts=c("contr.treatment","contr.poly"))
 options("contrasts")
 
 
+
+##### Abundance of isolates per plant species per site #####
+
+databun<-dat6
+temp<-dat6%>%
+  dplyr::select(OTU0:OTU9)%>%
+  mutate(abun=rowSums(.))%>%
+  select(abun)
+databun<-cbind(databun,temp)
+
+#Per host plant per site, abundance and richness
+m1<-databun%>%
+  group_by(Site,HostPlant)%>%
+  summarise(mean=mean(abun),se=std.error(abun),n=n())
+m1
+
+m1<-databun%>%
+  group_by(Site,HostPlant)%>%
+  summarise(mean=mean(SR),se=std.error(SR),n=n())
+m1
+
+#Per site abundance
+m1<-databun%>%
+  group_by(Site)%>%
+  summarise(sum=sum(abun),n=n())
+m1
+
+#Per species abundance
+m1<-databun%>%
+  group_by(HostPlant)%>%
+  summarise(sum=sum(abun),n=n())
+m1
+
+##### Calculating richness by site #####
+dat6turtlecove<-dat6%>%
+  filter(Site=="Turtle Cove")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6turtlecove)>0)) # 22 taxa in TC
+
+dat6cerf<-dat6%>%
+  filter(Site=="CERF")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6cerf)>0)) # 32 taxa in phrag
+
+dat6lumcon<-dat6%>%
+  filter(Site=="LUMCON")%>%
+  dplyr::select(OTU0:OTU9)
+length(which(colSums(dat6lumcon)>0)) # 35 taxa in patens
+
+
+
+
 ##### Calculating richness by plant species #####
 dat6junroe<-dat6%>%
   filter(HostPlant=="J. roemerianus")%>%
